@@ -178,6 +178,8 @@ def resource_version_create(context, data_dict):
     :returns: the newly created version
     :rtype: dictionary
     """
+    start_time = datetime.now()
+    log.info("Starting resource_version_create.")
     model = context.get('model', core_model)
 
     resource_id, name = toolkit.get_or_bust(
@@ -192,17 +194,22 @@ def resource_version_create(context, data_dict):
 
     creator_user_id = _get_creator_user_id(data_dict, model, context)
 
+    log.info(
+        f"Finished _get_creator_user_id in {start_time - datetime.now()}"
+    )
+
     activity = model.Session.query(Activity). \
         filter_by(object_id=resource.package_id). \
         order_by(Activity.timestamp.desc()). \
         first()
-
+    log.info(f"Finished query activity in {start_time - datetime.now()}")
     if not activity:
         raise toolkit.ObjectNotFound('Activity not found')
 
     if not resource_in_activity(context, {'activity_id': activity.id, 'resource_id': resource_id}):
         raise toolkit.ObjectNotFound('Resource not found in the activity.')
 
+    log.info(f"Finished resource_in_activity {start_time - datetime.now()}")
     version = Version(
         package_id=resource.package_id,
         resource_id=resource_id,
